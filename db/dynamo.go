@@ -23,7 +23,7 @@ func Init() {
 	Client = dynamodb.NewFromConfig(cfg)
 }
 
-func SaveResource(userID int64, url, notes string) error {
+func SaveResource(userID int64, url string, resourceType string, notes string, tags []string) error {
 	now := time.Now().UTC().Format(time.RFC3339)
 	id := uuid.New().String()
 
@@ -35,11 +35,19 @@ func SaveResource(userID int64, url, notes string) error {
 			Value: fmt.Sprintf("RES#%s#%s", now, id),
 		},
 		"resource_id": &types.AttributeValueMemberS{Value: id},
-		"type":        &types.AttributeValueMemberS{Value: "article"},
+		"type":        &types.AttributeValueMemberS{Value: resourceType},
 		"url":         &types.AttributeValueMemberS{Value: url},
 		"status":      &types.AttributeValueMemberS{Value: "to_read"},
 		"notes":       &types.AttributeValueMemberS{Value: notes},
 		"created_at":  &types.AttributeValueMemberS{Value: now},
+	}
+
+	if len(tags) > 0 {
+		tagValues := []types.AttributeValue{}
+		for _, tag := range tags {
+			tagValues = append(tagValues, &types.AttributeValueMemberS{Value: tag})
+		}
+		item["tags"] = &types.AttributeValueMemberSS{Value: tags}
 	}
 
 	_, err := Client.PutItem(context.Background(), &dynamodb.PutItemInput{
