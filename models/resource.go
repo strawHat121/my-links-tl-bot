@@ -11,4 +11,5 @@ type Resource struct {
 	Tags       []string
 	Notes      string
 	CreatedAt  string
+	SK         string
 }
