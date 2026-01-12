@@ -93,6 +93,10 @@ func ListResources(userID int64, limit int32) ([]models.Resource, error) {
 			URL:    item["url"].(*types.AttributeValueMemberS).Value,
 			Status: item["status"].(*types.AttributeValueMemberS).Value,
 		}
+
+		if t, ok := item["tags"]; ok {
+			r.Tags = t.(*types.AttributeValueMemberSS).Value
+		}
 		res = append(res, r)
 	}
 
