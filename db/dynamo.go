@@ -34,7 +34,7 @@ func SaveResource(r models.Resource) error {
 
 	item := map[string]types.AttributeValue{
 		"PK": &types.AttributeValueMemberS{
-			Value: fmt.Sprintf("USER#%d", fmt.Sprintf("USER#%d", r.UserID)),
+			Value: fmt.Sprintf("USER#%d", r.UserID),
 		},
 		"SK": &types.AttributeValueMemberS{
 			Value: r.SK,
@@ -49,11 +49,9 @@ func SaveResource(r models.Resource) error {
 	}
 
 	if len(r.Tags) > 0 {
-		// tagValues := []types.AttributeValue{}
-		// for _, tag := range tags {
-		// 	tagValues = append(tagValues, &types.AttributeValueMemberS{Value: tag})
-		// }
-		item["tags"] = &types.AttributeValueMemberSS{Value: r.Tags}
+		item["tags"] = &types.AttributeValueMemberSS{
+			Value: r.Tags,
+		}
 	}
 
 	_, err := Client.PutItem(context.Background(), &dynamodb.PutItemInput{
@@ -69,8 +67,12 @@ func ListResources(userID int64, limit int32) ([]models.Resource, error) {
 		TableName:              &[]string{TableName}[0],
 		KeyConditionExpression: awsString("PK = :pk AND begins_with(SK, :sk)"),
 		ExpressionAttributeValues: map[string]types.AttributeValue{
-			":pk": &types.AttributeValueMemberS{Value: fmt.Sprintf("USER#d", userID)},
-			":sk": &types.AttributeValueMemberS{Value: "RES#"},
+			":pk": &types.AttributeValueMemberS{
+				Value: fmt.Sprintf("USER#%d", userID),
+			},
+			":sk": &types.AttributeValueMemberS{
+				Value: "RES#",
+			},
 		},
 		ScanIndexForward: awsBool(false),
 		Limit:            &limit,
@@ -101,13 +103,21 @@ func MarkDone(userID int64, sk string) error {
 	_, err := Client.UpdateItem(context.Background(), &dynamodb.UpdateItemInput{
 		TableName: &[]string{TableName}[0],
 		Key: map[string]types.AttributeValue{
-			"PK": &types.AttributeValueMemberS{Value: fmt.Sprintf("USER#%d", userID)},
-			"SK": &types.AttributeValueMemberS{Value: sk},
+			"PK": &types.AttributeValueMemberS{
+				Value: fmt.Sprintf("USER#%d", userID),
+			},
+			"SK": &types.AttributeValueMemberS{
+				Value: sk,
+			},
 		},
-		UpdateExpression:         awsString("SET #s = :done"),
-		ExpressionAttributeNames: map[string]string{"#s": "string"},
+		UpdateExpression: awsString("SET #s = :done"),
+		ExpressionAttributeNames: map[string]string{
+			"#s": "status", // ✅ FIXED
+		},
 		ExpressionAttributeValues: map[string]types.AttributeValue{
-			":done": &types.AttributeValueMemberS{Value: "completed"},
+			":done": &types.AttributeValueMemberS{
+				Value: "completed",
+			},
 		},
 	})
 
@@ -115,5 +125,4 @@ func MarkDone(userID int64, sk string) error {
 }
 
 func awsString(s string) *string { return &s }
-
-func awsBool(b bool) *bool { return &b }
+func awsBool(b bool) *bool       { return &b }
